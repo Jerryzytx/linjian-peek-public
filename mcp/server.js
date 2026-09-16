@@ -1225,8 +1225,13 @@ function makeServer() {
     app_name: z.string().default(""), package_name: z.string().default(""), action: z.string().default(""), status: z.string().default("completed"), metadata_json: z.any().optional()
   }, async (event) => textResult(await addActivityEvent(event) || { ok: false, error: "activity_event_write_failed" }));
 
-  server.tool("get_phone_state", "用于陪伴对象主动确认用户当前现实状态。读取服务器缓存的最近手机状态，快速返回 current_package、screen_text、accessibility_ready；不会等待手机实时刷新，避免 20 秒工具超时。", { device_id: z.string().default(DEFAULT_DEVICE) }, async ({ device_id = DEFAULT_DEVICE }) => {
-    try {
+  server.tool(
+ "get_phone_state",
+ "用于陪伴对象主动确认用户当前现实状态...",
+ {
+   device_id: z.string().default(DEFAULT_DEVICE)
+ },
+ async ({ device_id = DEFAULT_DEVICE }) => {
       const res = await linjianFetch(`/api/device/state?device_id=${encodeURIComponent(device_id)}`, { timeout_ms: QUICK_FETCH_TIMEOUT_MS });
       const data = await res.json();
       // 状态读取不能被活动日志拖慢；记录失败不影响本次结果。

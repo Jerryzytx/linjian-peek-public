@@ -1232,16 +1232,31 @@ function makeServer() {
    device_id: z.string().default(DEFAULT_DEVICE)
  },
  async ({ device_id = DEFAULT_DEVICE }) => {
-      const res = await linjianFetch(`/api/device/state?device_id=${encodeURIComponent(device_id)}`, { timeout_ms: QUICK_FETCH_TIMEOUT_MS });
-      const data = await res.json();
-      // 状态读取不能被活动日志拖慢；记录失败不影响本次结果。
-      postCompanionAction("get_phone_state", { device_id }).catch(() => null);
-      return textResult({ ...data, mcp_note: "已快速读取服务器缓存状态；如果 state/life_state 为 null，请保持掌心窗前台或允许后台运行后重试。" });
-    } catch (error) {
-      return textResult({ ok: false, error: "phone_state_fetch_failed", message: "读取手机状态超时或后端暂时不可达；请确认 Render 服务已唤醒、MCP URL/Token 正确、掌心窗允许后台运行。", detail: String(error?.message || error).slice(0, 500) });
-    }
-  });
+  try {
+    const res = await linjianFetch(
+      `/api/device/state?device_id=${encodeURIComponent(device_id)}`,
+      { timeout_ms: QUICK_FETCH_TIMEOUT_MS }
+    );
 
+    const data = await res.json();
+
+    // 状态读取不能被活动日志拖慢；记录失败不影响本次结果。
+    postCompanionAction("get_phone_state", { device_id }).catch(() => null);
+
+    return textResult({
+      ...data,
+      mcp_note: "已快速读取服务器缓存状态；如果 state/life_state 为 null，请保持掌心窗前台或允许后台运行后重试。"
+    });
+
+  } catch (error) {
+    return textResult({
+      ok: false,
+      error: "phone_state_fetch_failed",
+      message: "读取手机状态超时或后端暂时不可达；请确认 Render 服务已唤醒、MCP URL/Token 正确、掌心窗允许后台运行。",
+      detail: String(error?.message || error).slice(0, 500)
+    });
+  }
+});
 
 
   server.tool("get_screen_nodes", "读取当前屏幕无障碍节点：文字、控件类型、可点击状态与 bounds/center 坐标。当用户提到某个按钮、标题、列表项、评论框、发送键、红点位置，或需要陪伴对象看标题后精准点击时主动调用。", {
